@@ -28,9 +28,6 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Update to latest lib
-        run: go get -u github.com/installable-sh/lib@latest
-
       - name: Run tests
         run: go test -v ./...
 
@@ -45,9 +42,6 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Update to latest lib
-        run: go get -u github.com/installable-sh/lib@latest
 
       - name: Check formatting
         run: |
