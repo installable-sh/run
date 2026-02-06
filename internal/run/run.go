@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"os/signal"
 	"strings"
-	"syscall"
 
 	"github.com/installable-sh/lib/fetch"
 	"github.com/installable-sh/lib/shell"
@@ -108,11 +106,6 @@ func (r *Run) Exec(ctx context.Context) error {
 		return nil
 	}
 
-	// Set up signal forwarding to the shell script
-	sigCh := make(chan os.Signal, 1)
-	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
-	defer signal.Stop(sigCh)
-
 	return shell.RunWithIO(
 		ctx,
 		shell.Script{Content: script.Content, Name: script.Name},
@@ -120,6 +113,5 @@ func (r *Run) Exec(ctx context.Context) error {
 		r.Stdin,
 		r.Stdout,
 		r.Stderr,
-		sigCh,
 	)
 }

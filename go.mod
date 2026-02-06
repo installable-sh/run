@@ -2,7 +2,7 @@ module github.com/installable-sh/run
 
 go 1.24.0
 
-require github.com/installable-sh/lib v1.0.0
+require github.com/installable-sh/lib v1.1.0
 
 require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
