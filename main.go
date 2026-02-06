@@ -42,6 +42,15 @@ func main() {
 		} else {
 			fmt.Fprintf(os.Stderr, "[run] error: %v\n", err)
 		}
+
+		// If we sent a signal and the script exited gracefully (0, SIGINT, SIGTERM), treat as success
+		if receivedSig != nil {
+			sigintExit := 128 + int(syscall.SIGINT)
+			sigtermExit := 128 + int(syscall.SIGTERM)
+			if exitCode == 0 || exitCode == sigintExit || exitCode == sigtermExit {
+				exitCode = 0
+			}
+		}
 	}
 
 	os.Exit(exitCode)

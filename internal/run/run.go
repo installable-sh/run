@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/installable-sh/lib/fetch"
@@ -36,10 +37,10 @@ func New(args []string) *Run {
 		Stderr: os.Stderr,
 	}
 
-	// Find the URL (first arg starting with http:// or https://)
+	// Find the URL (first arg starting with http://, https://, or file://)
 	urlIndex := -1
 	for i, arg := range args {
-		if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") {
+		if strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") || strings.HasPrefix(arg, "file://") {
 			urlIndex = i
 			break
 		}
@@ -87,18 +88,34 @@ func (r *Run) Exec(ctx context.Context) error {
 		return nil
 	}
 
-	client, err := fetch.NewClient()
-	if err != nil {
-		return fmt.Errorf("failed to create HTTP client: %w", err)
-	}
+	var script fetch.Script
 
-	script, err := fetch.Fetch(ctx, client, fetch.Options{
-		URL:     r.URL,
-		SendEnv: r.SendEnv,
-		NoCache: r.NoCache,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to fetch script: %w", err)
+	if strings.HasPrefix(r.URL, "file://") {
+		// Handle file:// URLs by reading from local filesystem
+		filePath := strings.TrimPrefix(r.URL, "file://")
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to read file: %w", err)
+		}
+		script = fetch.Script{
+			Content: string(content),
+			Name:    filepath.Base(filePath),
+		}
+	} else {
+		// Handle http:// and https:// URLs
+		client, err := fetch.NewClient()
+		if err != nil {
+			return fmt.Errorf("failed to create HTTP client: %w", err)
+		}
+
+		script, err = fetch.Fetch(ctx, client, fetch.Options{
+			URL:     r.URL,
+			SendEnv: r.SendEnv,
+			NoCache: r.NoCache,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to fetch script: %w", err)
+		}
 	}
 
 	if r.Raw {
