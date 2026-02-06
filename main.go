@@ -24,28 +24,25 @@ func main() {
 		cancel()
 	}()
 
+	exitCode := 0
 	cmd := run.New(os.Args[1:])
-	err := cmd.Exec(ctx)
 
-	// No error - clean exit
-	if err == nil {
-		os.Exit(0)
-	}
+	if err := cmd.Exec(ctx); err != nil {
+		exitCode = 1
 
-	// Check if shell returned an exit status
-	var exitStatus interp.ExitStatus
-	if errors.As(err, &exitStatus) {
-		os.Exit(int(exitStatus))
-	}
-
-	// If context was cancelled due to signal, exit with 128 + signal number
-	if errors.Is(err, context.Canceled) && receivedSig != nil {
-		if sig, ok := receivedSig.(syscall.Signal); ok {
-			os.Exit(128 + int(sig))
+		// Check if shell returned an exit status
+		var exitStatus interp.ExitStatus
+		if errors.As(err, &exitStatus) {
+			exitCode = int(exitStatus)
+		} else if errors.Is(err, context.Canceled) && receivedSig != nil {
+			// Context cancelled due to signal - use 128 + signal number
+			if sig, ok := receivedSig.(syscall.Signal); ok {
+				exitCode = 128 + int(sig)
+			}
+		} else {
+			fmt.Fprintf(os.Stderr, "[run] error: %v\n", err)
 		}
 	}
 
-	// Other error
-	fmt.Fprintf(os.Stderr, "[run] error: %v\n", err)
-	os.Exit(1)
+	os.Exit(exitCode)
 }
