@@ -29,7 +29,7 @@ jobs:
           cache: true
 
       - name: Update to latest lib
-        run: go get -u github.com/installable-sh/lib@main
+        run: go get -u github.com/installable-sh/lib@latest
 
       - name: Run tests
         run: go test -v ./...
@@ -47,7 +47,7 @@ jobs:
           cache: true
 
       - name: Update to latest lib
-        run: go get -u github.com/installable-sh/lib@main
+        run: go get -u github.com/installable-sh/lib@latest
 
       - name: Check formatting
         run: |
