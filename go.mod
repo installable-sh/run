@@ -3,7 +3,7 @@ module github.com/installable-sh/run
 go 1.24.0
 
 require (
-	github.com/installable-sh/lib v1.1.0
+	github.com/installable-sh/lib v1.3.5
 	mvdan.cc/sh/v3 v3.12.0
 )
 
