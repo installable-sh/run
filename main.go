@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -39,9 +38,8 @@ func main() {
 			if sig, ok := receivedSig.(syscall.Signal); ok {
 				exitCode = 128 + int(sig)
 			}
-		} else {
-			fmt.Fprintf(os.Stderr, "[run] error: %v\n", err)
 		}
+		// Note: errors are already logged via logger.Errorf where they occur
 
 		// If we sent a signal and the script exited gracefully (0, SIGINT, SIGTERM), treat as success
 		if receivedSig != nil {
