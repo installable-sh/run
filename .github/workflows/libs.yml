@@ -5,47 +5,17 @@ on:
   schedule:
     - cron: "0 12 * * 6" # Weekly on Saturday at noon UTC (after lib releases Friday night)
 
-permissions:
-  contents: write
-  packages: write
-
 jobs:
-  update-libs:
-    runs-on: ubuntu-latest
-    outputs:
-      changed: ${{ steps.commit.outputs.changed }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Update lib to latest v1
-        run: |
-          go get github.com/installable-sh/lib@v1
-          go mod tidy
-
-      - name: Commit changes
-        id: commit
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add go.mod go.sum
-          if git diff --staged --quiet; then
-            echo "No changes to commit"
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            git commit -m "fix: weekly lib dependency update"
-            git push
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
+  update-lib:
+    uses: installable-sh/docker/.github/workflows/update-lib.yml@main
+    permissions:
+      contents: write
 
   release:
-    needs: update-libs
-    if: needs.update-libs.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
+    needs: update-lib
+    if: needs.update-lib.outputs.changed == 'true' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/release.yml
     secrets: inherit
+    permissions:
+      contents: write
+      packages: write

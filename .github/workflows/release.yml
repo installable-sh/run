@@ -15,121 +15,25 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  IMAGE_NAME: ghcr.io/installable-sh/run
-
 jobs:
   ci:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Install golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --help
-
-      - name: Run CI checks
-        run: make ci
+    uses: installable-sh/docker/.github/workflows/ci.yml@main
 
   release:
     needs: [ci]
     if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
-    runs-on: ubuntu-latest
+    uses: installable-sh/docker/.github/workflows/release.yml@main
     permissions:
       contents: write
-    outputs:
-      new_tag: ${{ steps.tag_version.outputs.new_tag }}
-      major_tag: ${{ steps.major.outputs.major_tag }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Bump version and push tag
-        id: tag_version
-        uses: mathieudutour/github-tag-action@v6.2
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          default_bump: patch
-          tag_prefix: v
-
-      - name: Extract major version
-        id: major
-        run: |
-          MAJOR=$(echo "${{ steps.tag_version.outputs.new_version }}" | cut -d. -f1)
-          echo "major_tag=v${MAJOR}" >> "$GITHUB_OUTPUT"
-
-      - name: Update rolling major tag
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -fa ${{ steps.major.outputs.major_tag }} -m "Latest ${{ steps.major.outputs.major_tag }} release"
-          git push origin ${{ steps.major.outputs.major_tag }} --force
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.tag_version.outputs.new_tag }}
-          name: ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
-          generate_release_notes: true
 
   build:
     needs: [ci, release]
     if: always() && needs.ci.result == 'success' && (needs.release.result == 'success' || needs.release.result == 'skipped')
-    runs-on: ubuntu-latest
+    uses: installable-sh/docker/.github/workflows/docker.yml@main
     permissions:
       contents: read
       packages: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=raw,value=${{ needs.release.outputs.major_tag }},enable=${{ needs.release.outputs.new_tag != '' }}
-            type=raw,value=${{ needs.release.outputs.new_tag }},enable=${{ needs.release.outputs.new_tag != '' }}
-            type=ref,event=branch
-            type=ref,event=pr
-            type=sha
-
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    with:
+      image-name: ghcr.io/installable-sh/run
+      new-tag: ${{ needs.release.outputs.new_tag }}
+      major-tag: ${{ needs.release.outputs.major_tag }}
