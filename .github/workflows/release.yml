@@ -2,6 +2,7 @@ name: CI & Release
 
 on:
   workflow_dispatch:
+  workflow_call:
   schedule:
     - cron: "0 0 * * 0" # Weekly on Sunday at midnight UTC
   push:
