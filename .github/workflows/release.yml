@@ -21,14 +21,13 @@ jobs:
 
   release:
     needs: [ci]
-    if: (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
     uses: installable-sh/docker/.github/workflows/release.yml@main
     permissions:
       contents: write
 
   build:
     needs: [ci, release]
-    if: always() && needs.ci.result == 'success' && (needs.release.result == 'success' || needs.release.result == 'skipped')
+    if: always() && needs.ci.result == 'success'
     uses: installable-sh/docker/.github/workflows/docker.yml@main
     permissions:
       contents: read
