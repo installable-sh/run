@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/installable-sh/lib/fetch"
+	"github.com/installable-sh/lib/log"
 	"github.com/installable-sh/lib/shell"
 	"github.com/installable-sh/lib/version"
 )
@@ -20,6 +21,7 @@ type Run struct {
 	SendEnv     bool
 	Raw         bool
 	NoCache     bool
+	Debug       bool
 	URL         string
 	ScriptArgs  []string
 
@@ -67,6 +69,8 @@ func New(args []string) *Run {
 			r.Raw = true
 		case "+nocache":
 			r.NoCache = true
+		case "+debug":
+			r.Debug = true
 		}
 	}
 
@@ -81,21 +85,29 @@ func (r *Run) Exec(ctx context.Context) error {
 	}
 
 	if r.ShowHelp || r.URL == "" {
-		_, _ = fmt.Fprintln(r.Stdout, "usage: RUN [+env] [+raw] [+nocache] <url> [args...]")
+		_, _ = fmt.Fprintln(r.Stdout, "usage: RUN [+env] [+raw] [+nocache] [+debug] <url> [args...]")
 		_, _ = fmt.Fprintln(r.Stdout, "  +env      Send environment variables as X-Env-* headers")
 		_, _ = fmt.Fprintln(r.Stdout, "  +raw      Print the script without executing")
 		_, _ = fmt.Fprintln(r.Stdout, "  +nocache  Bypass CDN caches")
+		_, _ = fmt.Fprintln(r.Stdout, "  +debug    Show debug information (URL, headers, response)")
 		return nil
 	}
 
+	logger := log.New("run")
+	logger.SetDebug(r.Debug)
+	logger.SetOutput(r.Stderr)
+
 	var script fetch.Script
 
-	if strings.HasPrefix(r.URL, "file://") {
+	logger.Debugf("URL: %s", r.URL)
+	logger.Debugf("Flags: +env=%v +raw=%v +nocache=%v", r.SendEnv, r.Raw, r.NoCache)
+
+	if filePath, ok := strings.CutPrefix(r.URL, "file://"); ok {
 		// Handle file:// URLs by reading from local filesystem
-		filePath := strings.TrimPrefix(r.URL, "file://")
+		logger.Debugf("Reading local file: %s", filePath)
 		content, err := os.ReadFile(filePath)
 		if err != nil {
-			return fmt.Errorf("failed to read file: %w", err)
+			return fmt.Errorf("failed to read %s: %w", r.URL, err)
 		}
 		script = fetch.Script{
 			Content: string(content),
@@ -103,20 +115,24 @@ func (r *Run) Exec(ctx context.Context) error {
 		}
 	} else {
 		// Handle http:// and https:// URLs
+		logger.Debugf("Creating HTTP client with embedded CA certificates")
 		client, err := fetch.NewClient()
 		if err != nil {
 			return fmt.Errorf("failed to create HTTP client: %w", err)
 		}
 
+		logger.Debugf("Fetching %s", r.URL)
 		script, err = fetch.Fetch(ctx, client, fetch.Options{
 			URL:     r.URL,
 			SendEnv: r.SendEnv,
 			NoCache: r.NoCache,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to fetch script: %w", err)
+			return fmt.Errorf("failed to fetch %s: %w", r.URL, err)
 		}
 	}
+
+	logger.Debugf("Script name: %s, length: %d bytes", script.Name, len(script.Content))
 
 	if r.Raw {
 		_, _ = fmt.Fprint(r.Stdout, script.Content)
