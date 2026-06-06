@@ -12,8 +12,8 @@ github.com/hashicorp/go-hclog v1.6.3 h1:Qr2kF+eVWjTiYmU7Y31tYlP1h0q/X3Nl3tPGdaB1
 github.com/hashicorp/go-hclog v1.6.3/go.mod h1:W4Qnvbt70Wk/zYJryRzDRU/4r0kIg0PVHBcfoyhpF5M=
 github.com/hashicorp/go-retryablehttp v0.7.8 h1:ylXZWnqa7Lhqpk0L1P1LzDtGcCR0rPVUrx/c8Unxc48=
 github.com/hashicorp/go-retryablehttp v0.7.8/go.mod h1:rjiScheydd+CxvumBsIrFKlx3iS0jrZ7LvzFGFmuKbw=
-github.com/installable-sh/lib v1.6.17 h1:O1F/LjH7zzysTm3P9TG44w3tdoqqE6O6xsaKtzXDJOc=
-github.com/installable-sh/lib v1.6.17/go.mod h1:2k6B+NXZr/ljDELeMLyoz1gktvJmU5qL8A+UX+b6fsE=
+github.com/installable-sh/lib v1.6.18 h1:sdX1Y0JfkDSoXa8RxzT8cAPob7LOi3aRWW1LPOBdYQ0=
+github.com/installable-sh/lib v1.6.18/go.mod h1:2k6B+NXZr/ljDELeMLyoz1gktvJmU5qL8A+UX+b6fsE=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
 github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
 github.com/kr/text v0.2.0 h1:5Nx0Ya0ZqY2ygV366QzturHI13Jq95ApcVaJBhpS+AY=
